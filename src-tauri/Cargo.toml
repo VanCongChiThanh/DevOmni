@@ -1,0 +1,28 @@
+[package]
+name = "devomni"
+description = "DevOmni — offline-first developer utility suite"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+# `_lib` suffix avoids a name clash with the bin target on Windows.
+name = "devomni_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+devomni-core = { path = "../crates/devomni-core" }
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+tokio = { version = "1", features = ["time"] }
+sha2 = "0.10"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

@@ -1,0 +1,70 @@
+# Builds installers for Windows, macOS and Linux and attaches them to a
+# draft GitHub Release. Trigger: push a tag like v1.0.0
+#   git tag v1.0.0 && git push origin v1.0.0
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: ""
+          - platform: macos-latest # Apple Silicon (M1–M4)
+            args: "--target aarch64-apple-darwin"
+          - platform: macos-latest # Intel Macs
+            args: "--target x86_64-apple-darwin"
+          - platform: ubuntu-22.04
+            args: ""
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Linux build dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "DevOmni ${{ github.ref_name }}"
+          releaseBody: |
+            **Download for your system:**
+            - **Windows 10/11:** `DevOmni_x.y.z_x64-setup.exe`
+            - **macOS Apple Silicon (M1–M4):** `DevOmni_x.y.z_aarch64.dmg`
+            - **macOS Intel:** `DevOmni_x.y.z_x64.dmg`
+            - **Linux:** `.AppImage` (any distro) or `.deb` (Ubuntu/Debian)
+
+            The document converter downloads its engine (~35 MB) the first time you use it.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}

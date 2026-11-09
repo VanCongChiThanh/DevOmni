@@ -1,0 +1,240 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface-0: 11 13 16;
+  --surface-1: 17 20 24;
+  --surface-2: 24 28 34;
+  --surface-3: 34 39 47;
+  --line: 44 50 60;
+  --fg: 222 226 232;
+  --fg-muted: 150 158 170;
+  --fg-faint: 98 106 118;
+  --accent: 99 140 255;
+
+  /* Diff palette */
+  --del-bg: 248 81 73;
+  --ins-bg: 63 185 80;
+  --chg: 210 153 34;
+
+  --diff-row-h: 20px;
+  --shadow: 0 0 0 / 0.45;
+  color-scheme: dark;
+
+  /* Syntax (dark) */
+  --syn-keyword: #6fa8dc;
+  --syn-string: #c9a26d;
+  --syn-comment: #6b8f5e;
+  --syn-number: #a9c4a0;
+  --syn-type: #5fb3a1;
+  --syn-prop: #9ebfd6;
+  --syn-meta: #b48ead;
+  --syn-def: #d8cb8f;
+  --syn-invalid: #e06c75;
+}
+
+/* Light theme: same tokens, so every component follows automatically. */
+:root[data-theme="light"] {
+  --surface-0: 255 255 255;
+  --surface-1: 247 248 250;
+  --surface-2: 240 242 245;
+  --surface-3: 228 231 236;
+  --line: 222 226 232;
+  --fg: 24 28 34;
+  --fg-muted: 88 96 108;
+  --fg-faint: 140 148 160;
+  --accent: 59 102 235;
+
+  --del-bg: 220 50 47;
+  --ins-bg: 34 150 70;
+  --chg: 190 130 10;
+  --shadow: 15 23 42 / 0.12;
+  color-scheme: light;
+
+  --syn-keyword: #1f5fbf;
+  --syn-string: #9a5b13;
+  --syn-comment: #5f7f52;
+  --syn-number: #2f7d4a;
+  --syn-type: #13786a;
+  --syn-prop: #2d5f87;
+  --syn-meta: #8a4f9e;
+  --syn-def: #7a5c00;
+  --syn-invalid: #c62828;
+}
+
+html {
+  transition: background-color 0.15s ease;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  /* The app shell never scrolls; only panes inside it do. */
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  background: rgb(var(--surface-0));
+  color: rgb(var(--fg));
+  font-family: theme("fontFamily.sans");
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+textarea,
+input,
+.selectable {
+  user-select: text;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--surface-3));
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-fg-muted
+      transition-colors hover:bg-surface-3 hover:text-fg disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-active {
+    @apply bg-surface-3 text-fg;
+  }
+  .select {
+    @apply h-7 rounded-md border border-line bg-surface-2 px-2 text-xs text-fg outline-none focus:border-accent;
+  }
+
+  /* ── Diff viewer ───────────────────────────────────────────── */
+  .diff-row {
+    display: grid;
+    grid-template-columns: var(--gutter-w) minmax(0, 1fr) 44px var(--gutter-w) minmax(0, 1fr);
+    height: var(--diff-row-h);
+    line-height: var(--diff-row-h);
+    font-family: theme("fontFamily.mono");
+    font-size: 12.5px;
+    tab-size: 4;
+  }
+  .diff-gutter {
+    @apply select-none pr-2 text-right text-fg-faint;
+    font-variant-numeric: tabular-nums;
+  }
+  .diff-cell {
+    overflow: hidden;
+    white-space: pre;
+    padding-left: 8px;
+  }
+  .diff-cell > span {
+    display: inline-block;
+    min-width: 100%;
+  }
+  .diff-cell.left > span {
+    transform: translateX(calc(var(--sx-left, 0) * -1px));
+  }
+  .diff-cell.right > span {
+    transform: translateX(calc(var(--sx-right, 0) * -1px));
+  }
+  /* Merge column between the panes (Beyond Compare style arrows) */
+  .merge-band {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    padding-top: 2px;
+    cursor: pointer;
+    background: rgb(var(--chg) / 0.1);
+    border-top: 1px solid rgb(var(--chg) / 0.35);
+    border-bottom: 1px solid rgb(var(--chg) / 0.35);
+  }
+  .merge-band.active {
+    background: rgb(var(--accent) / 0.18);
+    border-color: rgb(var(--accent) / 0.7);
+  }
+  .merge-btn {
+    display: inline-flex;
+    height: 16px;
+    width: 18px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: rgb(var(--fg-muted));
+    background: rgb(var(--surface-3));
+  }
+  .merge-btn:hover {
+    color: #fff;
+    background: rgb(var(--accent));
+  }
+  .merge-btn:disabled {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  /* Diff drawn inside the editors */
+  .cm-diff-removed { background: rgb(var(--del-bg) / 0.13); }
+  .cm-diff-added { background: rgb(var(--ins-bg) / 0.13); }
+  .cm-diff-similar { background: rgb(var(--fg) / 0.035); }
+  .cm-diff-ignored { opacity: 0.45; }
+  .cm-diff-spacer {
+    background-image: repeating-linear-gradient(-45deg, transparent 0 5px, rgb(var(--line) / 0.45) 5px 6px);
+  }
+
+  .k-similar .diff-cell { background: rgb(var(--fg) / 0.035); }
+  .k-changed .diff-cell.left,
+  .k-deleted .diff-cell.left { background: rgb(var(--del-bg) / 0.13); }
+  .k-changed .diff-cell.right,
+  .k-inserted .diff-cell.right { background: rgb(var(--ins-bg) / 0.13); }
+  .k-changed .diff-gutter.left,
+  .k-deleted .diff-gutter.left { background: rgb(var(--del-bg) / 0.2); color: rgb(var(--fg-muted)); }
+  .k-changed .diff-gutter.right,
+  .k-inserted .diff-gutter.right { background: rgb(var(--ins-bg) / 0.2); color: rgb(var(--fg-muted)); }
+  .k-ignored .diff-cell { color: rgb(var(--fg-faint)); font-style: italic; }
+
+  .diff-filler {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent 0 5px,
+      rgb(var(--line) / 0.45) 5px 6px
+    );
+  }
+  .mark-del { background: rgb(var(--del-bg) / 0.38); border-radius: 2px; }
+  .mark-ins { background: rgb(var(--ins-bg) / 0.38); border-radius: 2px; }
+
+  .row-active .diff-gutter { box-shadow: inset 2px 0 0 rgb(var(--accent)); }
+}
+
+/* ── Syntax colors (shared by editor + diff). Soft palette so red/green diff
+      backgrounds stay the dominant signal. Disabled via .syntax-off. ───────── */
+.syntax-on .tok-keyword,
+.syntax-on .tok-bool,
+.syntax-on .tok-atom { color: var(--syn-keyword); }
+.syntax-on .tok-string,
+.syntax-on .tok-string2 { color: var(--syn-string); }
+.syntax-on .tok-comment { color: var(--syn-comment); font-style: italic; }
+.syntax-on .tok-number { color: var(--syn-number); }
+.syntax-on .tok-typeName,
+.syntax-on .tok-className,
+.syntax-on .tok-namespace { color: var(--syn-type); }
+.syntax-on .tok-propertyName { color: var(--syn-prop); }
+.syntax-on .tok-variableName2,
+.syntax-on .tok-macroName,
+.syntax-on .tok-meta { color: var(--syn-meta); }
+.syntax-on .tok-definition { color: var(--syn-def); }
+.syntax-on .tok-invalid { color: var(--syn-invalid); }
+.syntax-on .tok-heading { color: var(--syn-keyword); font-weight: 600; }
